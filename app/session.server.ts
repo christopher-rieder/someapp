@@ -48,6 +48,9 @@ export async function requireUserId(
   redirectTo: string = new URL(request.url).pathname
 ) {
   const userId = await getUserId(request);
+  if(redirectTo === '/login') {
+    return userId || ''
+  }
   if (!userId) {
     const searchParams = new URLSearchParams([["redirectTo", redirectTo]]);
     throw redirect(`/login?${searchParams}`);
@@ -90,7 +93,7 @@ export async function createUserSession({
 
 export async function logout(request: Request) {
   const session = await getSession(request);
-  return redirect("/", {
+  return redirect("/login", {
     headers: {
       "Set-Cookie": await sessionStorage.destroySession(session),
     },

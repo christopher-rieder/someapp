@@ -36,3 +36,62 @@ model Note {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId String
 }
+
+// this data model is extremely simplified
+model Car {
+  id    String @id @default(cuid())
+  brand String
+  model String
+  version String
+  retail_price Int
+  image String
+  color String
+  year Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Financing {
+  id    String @id @default(cuid())
+  name String
+  issuer String
+  max_amount_percentage Int
+  max_amount_flat Int
+  selector String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Promotions {
+  id    String @id @default(cuid())
+  name String
+  selector String
+  discount_percentage Int
+  discount_flat Int
+  is_special_discount Boolean
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// lot of the data can be stale, but it needs to be saved as it was at
+// the moment of the transaction (or budgeting)
+// the critical data are the prices, so that's enough for this proof of concept
+model Budget {
+  id    String @id @default(cuid())
+  number Int
+  is_valid Boolean
+  car_id String
+  car_price Int
+  financing_id String
+  amount_financed Int
+  taxes Int
+  applied_discount Int
+  applied_special_discount Int
+  max_appliable_special_discount Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
