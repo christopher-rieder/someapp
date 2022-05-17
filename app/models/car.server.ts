@@ -2,14 +2,26 @@ import type { Car } from "@prisma/client";
 import { prisma } from "~/db.server";
 export type { Car } from "@prisma/client";
 
-export function getCar({ id, }: Pick<Car, "id">) {
-  return prisma.car.findFirst({
-    where: { id }
-  });
+function processCar(car: Car) {
+  car.retail_price /= 100
 }
 
-export function getCarList() {
-  return prisma.car.findMany();
+export async function getCar({ id, }: Pick<Car, "id">) {
+  const car = await prisma.car.findFirst({
+    where: { id }
+  });
+  if(car) {
+    processCar(car)
+  }
+  return car
+}
+
+export async function getCarList() {
+  const carList = await prisma.car.findMany();
+  if(carList) {
+    carList.forEach(processCar)
+  }
+  return carList
 }
 
 export function createCar({

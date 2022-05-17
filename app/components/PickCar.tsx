@@ -1,22 +1,44 @@
 import { Car } from "@prisma/client";
+import { useFetcher } from "@remix-run/react";
 
-interface PickCar {
-  carList: Array<Car>;
-}
+export default function PickCar() {
+  const fetcherPickCar = useFetcher()
+  if (fetcherPickCar?.data?.carList) {
+    return (
+      <div>
+        <hr className="m-4"/>
+        {
+          fetcherPickCar.data.carList.map((car: Car) => (
+            <fetcherPickCar.Form method="post" key={car.id} className="flex">
+              <div>
+                <div>{`${car.brand} ${car.model} ${car.version} - $${car.retail_price}`}</div>
+              </div>
+              <button
+                name="pick-car"
+                value={car.id}
+                type="submit"
+                className="pl-2 text-l text-blue-500"
+              >
+                Select
+              </button>
+            </fetcherPickCar.Form>
+          ))
+        }
+      </div>
+    )
 
-export default function PickCar({ carList }: PickCar) {
-  return (
-    <div>
-      {
-        carList.map((car)=>{
-          return (
-            <div>
-              <div>{`${car.brand} ${car.model} ${car.version} - $${car.retail_price/100}`}</div>
-              <pre className="car-list-item-ugly">{JSON.stringify(car)}</pre>
-            </div>
-          )
-        })
-      }
-    </div>
-  )
+  } else {
+    return (
+      <fetcherPickCar.Form method="get">
+        <button
+          name="pick"
+          value="car"
+          type="submit"
+          className="block p-4 text-xl text-blue-500"
+        >
+          Pick Car
+        </button>
+      </fetcherPickCar.Form>
+    )
+  }
 }

@@ -95,3 +95,15 @@ model Budget {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model DraftBudget {
+  id    String @id @default(cuid())
+  userId String @unique
+  car_id String?
+  financing_id String?
+  amount_financed Int?
+  applied_special_discount Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
