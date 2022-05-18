@@ -1,16 +1,17 @@
 import { Car } from "@prisma/client";
-import { useFetcher } from "@remix-run/react";
+import { Form, useLoaderData } from "@remix-run/react";
+import { LoaderData } from "~/routes/budget/new";
 import GenericMoney from "./GenericMoney";
 
 export default function PickCar() {
-  const fetcherPickCar = useFetcher()
-  if (fetcherPickCar?.data?.carList) {
+  const data = useLoaderData() as LoaderData
+  if (data.carList) {
     return (
       <div>
         <hr className="m-4" />
         {
-          fetcherPickCar.data.carList.map((car: Car) => (
-            <fetcherPickCar.Form method="post" key={car.id} className="flex">
+          data.carList.map((car: Car) => (
+            <Form method="post" key={car.id} className="flex">
               <div>
                 <div>{`${car.brand} ${car.model} ${car.version} - `}<GenericMoney num={car.retail_price} /></div>
               </div>
@@ -22,7 +23,7 @@ export default function PickCar() {
               >
                 Select
               </button>
-            </fetcherPickCar.Form>
+            </Form>
           ))
         }
       </div>
@@ -30,7 +31,7 @@ export default function PickCar() {
 
   } else {
     return (
-      <fetcherPickCar.Form method="get">
+      <Form method="get">
         <button
           name="pick"
           value="car"
@@ -39,7 +40,7 @@ export default function PickCar() {
         >
           Pick Car
         </button>
-      </fetcherPickCar.Form>
+      </Form>
     )
   }
 }

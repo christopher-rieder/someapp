@@ -1,5 +1,5 @@
 import { Car } from "@prisma/client";
-import { Form, useActionData, useFetchers, useLoaderData } from "@remix-run/react";
+import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import { ActionFunction, json, LoaderFunction, MetaFunction } from "@remix-run/server-runtime";
 import classNames from "classnames";
 import GenericMoney from "~/components/GenericMoney";
@@ -10,7 +10,7 @@ import { DraftBudgetErrors, getBudgetDraft, setAmountFinancing, setBudgetCar, se
 import { getFinancingList } from "~/models/financing.server";
 import { requireUserId } from "~/session.server";
 
-type LoaderData = {
+export type LoaderData = {
     carList?: Awaited<ReturnType<typeof getCarList>>;
     financingList?: Awaited<ReturnType<typeof getFinancingList>>;
     draft: Awaited<ReturnType<typeof getBudgetDraft>>;
@@ -19,7 +19,7 @@ type LoaderData = {
 export const loader: LoaderFunction = async ({ request }) => {
     const userId = await requireUserId(request);
     const draft = await getBudgetDraft({ userId })
-
+    
     const response = { draft } as LoaderData
     const searchParams = new URL(request.url).searchParams
 
@@ -134,9 +134,6 @@ function FinancingCard({ draft, max_amount_financed, errors }:
     const financing = draft.financing
     const adata = useActionData()
 
-    const fetchers = useFetchers()
-    const pickingCar = fetchers.some(fetcher => (Boolean(fetcher?.state === "submitting") && fetcher?.submission?.action.includes("pick=car")) || Boolean(fetcher?.data?.carList))
-
     return (
         <section className="flex-1">
             {financing ? (
@@ -172,7 +169,7 @@ function FinancingCard({ draft, max_amount_financed, errors }:
             ) : (
                 <span className="not-selection">financing not selected</span>
             )}
-            <PickFinancing key={String(car?.id) + pickingCar} pickingCar={pickingCar} carId={car?.id} />
+            <PickFinancing key={car?.id} carId={car?.id} />
         </section>
     )
 }

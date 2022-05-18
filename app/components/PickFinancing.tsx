@@ -1,39 +1,40 @@
 import { Financing } from "@prisma/client";
-import { useFetcher, useFetchers } from "@remix-run/react";
-import { useState } from "react";
+import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
+import { LoaderData } from "~/routes/budget/new";
 import GenericMoney from "./GenericMoney";
 
-export default function PickFinancing({ carId, pickingCar }: { carId: string, pickingCar: boolean }) {
-  const fetcherPickFinancing = useFetcher()
-  const [carIdPicked] = useState(carId)
+export default function PickFinancing({ carId }: { carId: string | undefined }) {
+  const data = useLoaderData() as LoaderData
+  const [searchParams] = useSearchParams();
+  const pickingCar = searchParams.get('pick') === 'car'
 
-  if (carId && fetcherPickFinancing?.data?.financingList) {
+  if (carId && data.financingList) {
     return (
       <div>
         <hr className="m-4" />
         {
-          fetcherPickFinancing.data.financingList.map((financing: Financing) => (
-            <fetcherPickFinancing.Form method="post" key={financing.id} className="flex">
+          data.financingList.map((financing: Financing) => (
+            <Form method="post" key={financing.id} className="flex">
               <div >
                 <div>{`${financing.name} ${financing.max_amount_percentage / 100}%`}| <GenericMoney num={financing.max_amount_flat} /></div>
               </div>
               <button
                 name="pick-financing"
-                disabled={pickingCar || carIdPicked !== carId}
+                disabled={pickingCar}
                 value={financing.id}
                 type="submit"
                 className="pl-2 text-l text-blue-500"
               >
                 Select
               </button>
-            </fetcherPickFinancing.Form>
+            </Form>
           ))
         }
       </div>
     )
   } else {
     return (
-      <fetcherPickFinancing.Form method="get">
+      <Form method="get">
         <button
           disabled={!carId || pickingCar}
           name="pick"
@@ -43,7 +44,7 @@ export default function PickFinancing({ carId, pickingCar }: { carId: string, pi
         >
           Pick Financing
         </button>
-      </fetcherPickFinancing.Form>
+      </Form>
     )
   }
 }
