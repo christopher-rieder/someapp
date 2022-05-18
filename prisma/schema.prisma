@@ -47,6 +47,8 @@ model Car {
   image String
   color String
   year Int?
+  draftBudget DraftBudget[]
+  budget Budget[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -59,6 +61,8 @@ model Financing {
   max_amount_percentage Int
   max_amount_flat Int
   selector String
+  draftBudget DraftBudget[]
+  budget Budget[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -81,10 +85,13 @@ model Promotions {
 // the critical data are the prices, so that's enough for this proof of concept
 model Budget {
   id    String @id @default(cuid())
+  userId String
   number Int
   is_valid Boolean
+  car Car? @relation(fields: [car_id], references: [id])
   car_id String
   car_price Int
+  financing Financing? @relation(fields: [financing_id], references: [id])
   financing_id String
   amount_financed Int
   taxes Int
@@ -99,10 +106,16 @@ model Budget {
 model DraftBudget {
   id    String @id @default(cuid())
   userId String @unique
+  car Car? @relation(fields: [car_id], references: [id])
   car_id String?
+  car_price Int?
+  financing Financing? @relation(fields: [financing_id], references: [id])
   financing_id String?
   amount_financed Int?
+  taxes Int?
+  applied_discount Int?
   applied_special_discount Int?
+  max_appliable_special_discount Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

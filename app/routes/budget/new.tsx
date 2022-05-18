@@ -1,35 +1,25 @@
-import { useLoaderData } from "@remix-run/react";
+import { Car, DraftBudget } from "@prisma/client";
+import { useFetchers, useLoaderData } from "@remix-run/react";
 import { ActionFunction, json, LoaderFunction } from "@remix-run/server-runtime";
+import GenericMoney from "~/components/GenericMoney";
 import PickCar from "~/components/PickCar";
 import PickFinancing from "~/components/PickFinancing";
-import { getCar, getCarList } from "~/models/car.server";
+import { getCarList } from "~/models/car.server";
 import { getBudgetDraft, setBudgetCar, setBudgetFinancing } from "~/models/DraftBudget.server";
-import { getFinancing, getFinancingList } from "~/models/financing.server";
+import { getFinancingList } from "~/models/financing.server";
 import { getUserId } from "~/session.server";
 
-type Calculations = {
-    priceBeforeTaxes?: number
-    taxes?: number
-    totalPrice?: number
-}
 type LoaderData = {
     carList?: Awaited<ReturnType<typeof getCarList>>;
     financingList?: Awaited<ReturnType<typeof getFinancingList>>;
     draft: Awaited<ReturnType<typeof getBudgetDraft>>;
-    car?: Awaited<ReturnType<typeof getCar>>;
-    financing?: Awaited<ReturnType<typeof getFinancing>>;
-    calculations: Calculations
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
     const userId = await getUserId(request)
     const draft = await getBudgetDraft({ userId })
-    const calculations = {} as Calculations
 
-    const response = {
-        draft,
-        calculations
-    } as LoaderData
+    const response = { draft } as LoaderData
     const searchParams = new URL(request.url).searchParams
     if (searchParams.get('pick') === 'car') {
         const carList = await getCarList();
@@ -38,25 +28,6 @@ export const loader: LoaderFunction = async ({ request }) => {
     if (searchParams.get('pick') === 'financing') {
         const financingList = await getFinancingList();
         response.financingList = financingList
-    }
-    if (draft.car_id) {
-        const car = await getCar({ id: draft.car_id })
-        if (car) {
-            response.car = car
-            calculations.priceBeforeTaxes = car.retail_price
-        }
-    }
-    if (draft.financing_id) {
-        const financing = await getFinancing({ id: draft.financing_id })
-        if (financing) {
-            response.financing = financing
-            if(draft.amount_financed) {
-                // TODO: validate if amount is valid with this financing
-                if (calculations.priceBeforeTaxes) {
-                    calculations.priceBeforeTaxes -= draft.amount_financed
-                }
-            }
-        }
     }
     return json<LoaderData>(response);
 };
@@ -80,29 +51,14 @@ export const action: ActionFunction = async ({ request, params }) => {
 
 export default function BudgetListPage() {
     const data = useLoaderData() as LoaderData
+    const draft = data.draft.draft
+
+
     return (
         <div>
             <div className="bg-white flex m-10">
-                <div className="flex-1">
-                    {/* <div>--car-here--</div>
-                    <div>--price-validation--</div>
-                    <div>--discounts--</div>
-                    <div>--discounts-validation--</div>
-                    <div>--special-discounts--</div>
-                    <div>--special-discounts-validation--</div> */}
-                    <div>picked: {data.car?.brand} {data.car?.model}</div>
-                    <div>price: ${data.car?.retail_price}</div>
-                    <PickCar />
-                </div>
-                <div className="flex-1">
-                    {/* <div>--financing-here--</div>
-                    <div>--car-dependency--</div>
-                    <div>--amount-validation--</div> */}
-                    <div>picked: {data.financing?.name}</div>
-                    <div>max: {data.financing?.max_amount_flat}</div>
-                    <div>max%: {data.financing?.max_amount_percentage}</div>
-                    <PickFinancing />
-                </div>
+                <CarCard car={draft.car} />
+                <FinancingCard draft={draft} />
                 <div className="flex-1">
                     <div>--summary-here--</div>
                     <div>--dependency-with-all-prices--</div>
@@ -120,5 +76,47 @@ export default function BudgetListPage() {
                 <div>error boundary for each promotions and financing</div>
             </div>
         </div>
+    )
+}
+
+
+function CarCard({ car }: { car: Car | null }) {
+    return (
+        <section className="flex-1">
+            {car ? (
+                <div className="car-card">
+                    <div>picked: {car.brand} {car.model}</div>
+                    <div>price: <GenericMoney num={car.retail_price} /></div>
+                </div>
+
+            ) : (
+                <span className="not-selection">car not selected</span>
+            )}
+            <PickCar />
+        </section>
+    )
+
+}
+
+function FinancingCard({ draft }: { draft: Awaited<ReturnType<typeof getBudgetDraft>>['draft'] }) {
+    const car = draft.car
+    const financing = draft.financing
+
+    const fetchers = useFetchers()
+    const pickingCar = fetchers.some(fetcher => (Boolean(fetcher?.state === "submitting") && fetcher?.submission?.action.includes("pick=car")) || Boolean(fetcher?.data?.carList))
+
+    return (
+        <section className="flex-1">
+            {financing ? (
+                <div className="financing-card">
+                    <div>picked: {financing.name}</div>
+                    <div>max: <GenericMoney num={financing.max_amount_flat} /></div>
+                    <div>max: {financing.max_amount_percentage / 100}%</div>
+                </div>
+            ) : (
+                <span className="not-selection">financing not selected</span>
+            )}
+            <PickFinancing key={String(car?.id) + pickingCar} pickingCar={pickingCar} carId={car?.id} />
+        </section>
     )
 }

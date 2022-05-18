@@ -21,6 +21,7 @@
     border-bottom: 1px solid black;
 }
 
+button:disabled,
 a.disabled {
     color: gray;
     cursor: not-allowed;

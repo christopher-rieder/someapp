@@ -3,10 +3,10 @@ import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { Form, Link, useCatch, useLoaderData } from "@remix-run/react";
 import invariant from "tiny-invariant";
-import { deleteCar, getCar } from "~/models/car.server";
+import { Car_Ext, deleteCar, getCar } from "~/models/car.server";
 
 type LoaderData = {
-  car: Car;
+  car: Car_Ext;
 };
 
 export const loader: LoaderFunction = async ({ request, params }) => {
