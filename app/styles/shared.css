@@ -26,3 +26,11 @@ a.disabled {
     color: gray;
     cursor: not-allowed;
 }
+
+input {
+    background-color: #0002;
+}
+
+.money-input {
+    min-width: 160px;
+}

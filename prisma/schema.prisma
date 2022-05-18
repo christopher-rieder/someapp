@@ -111,11 +111,11 @@ model DraftBudget {
   car_price Int?
   financing Financing? @relation(fields: [financing_id], references: [id])
   financing_id String?
-  amount_financed Int?
-  taxes Int?
-  applied_discount Int?
-  applied_special_discount Int?
-  max_appliable_special_discount Int?
+  amount_financed Int @default(0)
+  taxes Int @default(0)
+  applied_discount Int @default(0)
+  applied_special_discount Int @default(0)
+  max_appliable_special_discount Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

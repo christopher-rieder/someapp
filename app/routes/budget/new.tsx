@@ -1,13 +1,14 @@
 import { Car, DraftBudget } from "@prisma/client";
-import { useFetchers, useLoaderData } from "@remix-run/react";
+import { Form, useActionData, useFetchers, useLoaderData } from "@remix-run/react";
 import { ActionFunction, json, LoaderFunction } from "@remix-run/server-runtime";
+import classNames from "classnames";
 import GenericMoney from "~/components/GenericMoney";
 import PickCar from "~/components/PickCar";
 import PickFinancing from "~/components/PickFinancing";
 import { getCarList } from "~/models/car.server";
-import { getBudgetDraft, setBudgetCar, setBudgetFinancing } from "~/models/DraftBudget.server";
+import { DraftBudgetErrors, getBudgetDraft, setAmountFinancing, setBudgetCar, setBudgetFinancing } from "~/models/DraftBudget.server";
 import { getFinancingList } from "~/models/financing.server";
-import { getUserId } from "~/session.server";
+import { getUserId, requireUserId } from "~/session.server";
 
 type LoaderData = {
     carList?: Awaited<ReturnType<typeof getCarList>>;
@@ -34,11 +35,24 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 
 export const action: ActionFunction = async ({ request, params }) => {
-    const userId = await getUserId(request)
+    const userId = await requireUserId(request);
 
     const formData = await request.formData();
     const carId = formData.get('pick-car')
     const financingId = formData.get('pick-financing')
+
+    if (formData.has('amount_financed')) {
+        const amount_financed = Number(formData.get('amount_financed'))
+        const response = await setAmountFinancing({ amount_financed, userId })
+        if(response instanceof Error) {
+            return json(
+                { errors: response.message },
+                { status: 400 }
+              );
+        }
+        return setAmountFinancing({ amount_financed, userId })
+    }
+
     if (typeof carId === "string" && carId.length > 0) {
         return setBudgetCar({ userId, carId })
     }
@@ -52,13 +66,17 @@ export const action: ActionFunction = async ({ request, params }) => {
 export default function BudgetListPage() {
     const data = useLoaderData() as LoaderData
     const draft = data.draft.draft
-
+    const calculations = data.draft.calculations
 
     return (
         <div>
             <div className="bg-white flex m-10">
                 <CarCard car={draft.car} />
-                <FinancingCard draft={draft} />
+                <FinancingCard
+                    draft={draft}
+                    max_amount_financed={calculations.max_amount_financed}
+                    errors={data.draft.errors}
+                />
                 <div className="flex-1">
                     <div>--summary-here--</div>
                     <div>--dependency-with-all-prices--</div>
@@ -98,9 +116,15 @@ function CarCard({ car }: { car: Car | null }) {
 
 }
 
-function FinancingCard({ draft }: { draft: Awaited<ReturnType<typeof getBudgetDraft>>['draft'] }) {
+function FinancingCard({ draft, max_amount_financed, errors }:
+    {
+        draft: Awaited<ReturnType<typeof getBudgetDraft>>['draft']
+        max_amount_financed: number
+        errors?: DraftBudgetErrors
+    }) {
     const car = draft.car
     const financing = draft.financing
+    const adata = useActionData()
 
     const fetchers = useFetchers()
     const pickingCar = fetchers.some(fetcher => (Boolean(fetcher?.state === "submitting") && fetcher?.submission?.action.includes("pick=car")) || Boolean(fetcher?.data?.carList))
@@ -112,6 +136,30 @@ function FinancingCard({ draft }: { draft: Awaited<ReturnType<typeof getBudgetDr
                     <div>picked: {financing.name}</div>
                     <div>max: <GenericMoney num={financing.max_amount_flat} /></div>
                     <div>max: {financing.max_amount_percentage / 100}%</div>
+                    <Form method="post">
+                        <label htmlFor="amount_financed">Amount Financed: </label>
+                        <input
+                            defaultValue={draft.amount_financed / 100}
+                            className={classNames("money-input", { "text-red-700": errors?.amountFinanced })}
+                            type="number"
+                            name="amount_financed"
+                            id="amount_financed"
+                            // max={max_amount_financed / 100}
+                            min={0}
+                            step="0.01"
+                        />
+                        <button type="submit">Set</button>
+                        {errors?.amountFinanced ? (
+                            <div className="text-red-700">
+                                ERROR| max: {errors.amountFinanced.max} | provided: {errors.amountFinanced.providedValue} | saved: {draft.amount_financed / 100}
+                            </div>
+                        ) : null}
+                        {adata?.errors ? (
+                            <div className="text-red-700">
+                                ERROR {adata?.errors}
+                            </div>
+                        ): null}
+                    </Form>
                 </div>
             ) : (
                 <span className="not-selection">financing not selected</span>
