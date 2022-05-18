@@ -1,6 +1,6 @@
-import { Car, DraftBudget } from "@prisma/client";
+import { Car } from "@prisma/client";
 import { Form, useActionData, useFetchers, useLoaderData } from "@remix-run/react";
-import { ActionFunction, json, LoaderFunction } from "@remix-run/server-runtime";
+import { ActionFunction, json, LoaderFunction, MetaFunction } from "@remix-run/server-runtime";
 import classNames from "classnames";
 import GenericMoney from "~/components/GenericMoney";
 import PickCar from "~/components/PickCar";
@@ -8,7 +8,7 @@ import PickFinancing from "~/components/PickFinancing";
 import { getCarList } from "~/models/car.server";
 import { DraftBudgetErrors, getBudgetDraft, setAmountFinancing, setBudgetCar, setBudgetFinancing } from "~/models/DraftBudget.server";
 import { getFinancingList } from "~/models/financing.server";
-import { getUserId, requireUserId } from "~/session.server";
+import { requireUserId } from "~/session.server";
 
 type LoaderData = {
     carList?: Awaited<ReturnType<typeof getCarList>>;
@@ -17,11 +17,12 @@ type LoaderData = {
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
-    const userId = await getUserId(request)
+    const userId = await requireUserId(request);
     const draft = await getBudgetDraft({ userId })
 
     const response = { draft } as LoaderData
     const searchParams = new URL(request.url).searchParams
+
     if (searchParams.get('pick') === 'car') {
         const carList = await getCarList();
         response.carList = carList
@@ -34,28 +35,30 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 
-export const action: ActionFunction = async ({ request, params }) => {
+export const action: ActionFunction = async ({ request }) => {
     const userId = await requireUserId(request);
 
     const formData = await request.formData();
-    const carId = formData.get('pick-car')
     const financingId = formData.get('pick-financing')
 
     if (formData.has('amount_financed')) {
         const amount_financed = Number(formData.get('amount_financed'))
         const response = await setAmountFinancing({ amount_financed, userId })
         if(response instanceof Error) {
-            return json(
-                { errors: response.message },
-                { status: 400 }
-              );
+            return json( { errors: response.message }, { status: 400 } );
         }
         return setAmountFinancing({ amount_financed, userId })
     }
 
-    if (typeof carId === "string" && carId.length > 0) {
-        return setBudgetCar({ userId, carId })
+    if(formData.has('pick-car')) {
+        const carId = formData.get('pick-car')
+        if (typeof carId === "string" && carId.length > 0) {
+            return setBudgetCar({ userId, carId })
+        } else {
+            return json( { errors: { pickCar: true} }, { status: 400 } );
+        }
     }
+
     if (typeof financingId === "string" && financingId.length > 0) {
         return setBudgetFinancing({ financingId, userId })
     }
@@ -97,6 +100,11 @@ export default function BudgetListPage() {
     )
 }
 
+export const meta: MetaFunction = () => {
+    return {
+      title: "Draft Budget",
+    };
+  };
 
 function CarCard({ car }: { car: Car | null }) {
     return (

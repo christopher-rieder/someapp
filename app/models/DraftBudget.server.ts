@@ -140,11 +140,13 @@ export async function setAmountFinancing({ amount_financed, userId }: { amount_f
         return new Error("Financing not exists")
     }
 
+    const amount_financed_parsed = Math.floor(amount_financed * 100)
+
     const { amountFinancedNotValid, max_financing } = validateFinancingAmount({
         max_amount_flat: existingDraft.financing.max_amount_flat,
         max_amount_percentage: existingDraft.financing.max_amount_percentage,
         retail_price: existingDraft.car.retail_price,
-        amount: amount_financed * 100
+        amount: amount_financed_parsed
     })
 
     if (amountFinancedNotValid) {
@@ -154,7 +156,7 @@ export async function setAmountFinancing({ amount_financed, userId }: { amount_f
 
     return prisma.draftBudget.update({
         data: {
-            amount_financed: amount_financed * 100
+            amount_financed: amount_financed_parsed
         }, where: { id: existingDraft?.id }
     })
 }

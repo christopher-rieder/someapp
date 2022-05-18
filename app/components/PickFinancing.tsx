@@ -3,7 +3,7 @@ import { useFetcher, useFetchers } from "@remix-run/react";
 import { useState } from "react";
 import GenericMoney from "./GenericMoney";
 
-export default function PickFinancing({ carId, pickingCar }) {
+export default function PickFinancing({ carId, pickingCar }: { carId: string, pickingCar: boolean }) {
   const fetcherPickFinancing = useFetcher()
   const [carIdPicked] = useState(carId)
 
@@ -15,7 +15,7 @@ export default function PickFinancing({ carId, pickingCar }) {
           fetcherPickFinancing.data.financingList.map((financing: Financing) => (
             <fetcherPickFinancing.Form method="post" key={financing.id} className="flex">
               <div >
-                <div>{`${financing.name} ${financing.max_amount_percentage/100}%`}| <GenericMoney num={financing.max_amount_flat} /></div>
+                <div>{`${financing.name} ${financing.max_amount_percentage / 100}%`}| <GenericMoney num={financing.max_amount_flat} /></div>
               </div>
               <button
                 name="pick-financing"
