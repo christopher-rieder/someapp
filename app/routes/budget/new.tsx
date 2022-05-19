@@ -1,37 +1,19 @@
-import { useLoaderData } from "@remix-run/react";
+import { Outlet, useLoaderData, useLocation } from "@remix-run/react";
 import { ActionFunction, json, LoaderFunction, MetaFunction } from "@remix-run/server-runtime";
-import PickCar from "~/components/PickCar";
-import PickFinancing from "~/components/PickFinancing";
-import { carList, getCarList } from "~/models/car.server";
-import { getBudgetDraft, setAmountFinancing, setBudgetCar, setBudgetFinancing } from "~/models/DraftBudget.server";
-import { financingList, getFinancingList } from "~/models/financing.server";
+import { Link } from "react-router-dom";
+import { getBudgetDraft, setAmountFinancing } from "~/models/DraftBudget.server";
 import CarCard from "~/screens/budget/CarCard";
 import FinancingCard from "~/screens/budget/FinancingCard";
 import { requireUserId } from "~/session.server";
 
 export type LoaderData = {
-    carList?: carList;
-    financingList?: financingList;
     draft: Awaited<ReturnType<typeof getBudgetDraft>>;
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
     const userId = await requireUserId(request);
     const draft = await getBudgetDraft({ userId })
-
     const response = { draft } as LoaderData
-    const searchParams = new URL(request.url).searchParams
-
-    if (searchParams.has('pick')) {
-        const pick = searchParams.get('pick')
-        if (pick === 'car') {
-            response.carList = await getCarList();
-        }
-        if (pick === 'financing') {
-            response.financingList = await getFinancingList();
-        }
-    }
-
     return json<LoaderData>(response);
 };
 
@@ -48,24 +30,6 @@ export const action: ActionFunction = async ({ request }) => {
         return setAmountFinancing({ amount_financed, userId })
     }
 
-    if (formData.has('pick-car')) {
-        const carId = formData.get('pick-car')
-        if (typeof carId === "string" && carId.length > 0) {
-            return setBudgetCar({ userId, carId })
-        } else {
-            return json({ errors: { pickCar: true } }, { status: 400 });
-        }
-    }
-
-    if(formData.has('pick-financing')) {
-        const financingId = formData.get('pick-financing')
-        if (typeof financingId === "string" && financingId.length > 0) {
-            return setBudgetFinancing({ financingId, userId })
-        } else {
-            return json({ errors: { pickFinancing: true } }, { status: 400 });
-        }
-    }
-
     return null
 };
 
@@ -74,12 +38,20 @@ export default function BudgetScreen() {
     const data = useLoaderData() as LoaderData
     const draft = data.draft.draft
     const calculations = data.draft.calculations
+    const pickingCar = useLocation().pathname.includes('pick-car')
+    const pickingFinancing = useLocation().pathname.includes('pick-financing')
 
     return (
         <div>
             <div className="bg-white flex m-10">
                 <CarCard car={draft.car}>
-                    <PickCar carList={data.carList} />
+                    {pickingCar ? <Outlet /> : (
+                        <button className="block p-4 text-xl text-blue-500" >
+                            <Link to="pick-car">
+                                Pick Car
+                            </Link>
+                        </button>
+                    )}
                 </CarCard>
                 <FinancingCard
                     financing={draft.financing}
@@ -87,11 +59,13 @@ export default function BudgetScreen() {
                     max_amount_financed={calculations.max_amount_financed}
                     errors={data.draft.errors}
                 >
-                    <PickFinancing
-                        key={draft.car?.id}
-                        carId={draft.car?.id}
-                        financingList={data.financingList}
-                    />
+                    {pickingFinancing ? <Outlet /> : (
+                        <button className="block p-4 text-xl text-blue-500" >
+                            <Link to="pick-financing">
+                                Pick Financing
+                            </Link>
+                        </button>
+                    )}
                 </FinancingCard>
                 <div className="flex-1">
                     <div>--summary-here--</div>

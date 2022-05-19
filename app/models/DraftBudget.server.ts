@@ -1,5 +1,6 @@
 import { Car, DraftBudget, Financing } from "@prisma/client";
 import { prisma } from "~/db.server"
+import { getFinancingList } from "./financing.server";
 
 export type DraftBudgetErrors = {
     carPriceMismatch?: boolean
@@ -97,6 +98,44 @@ export async function getBudgetDraft({ userId }: { userId: string }) {
     // validate car
     // validate promotions
 }
+
+export async function getBudgetCar({ userId }) {
+    const draft = await prisma.draftBudget.findFirst({
+        select: {
+            car: true,
+        },
+        where: { userId },
+    });
+
+    return draft?.car
+}
+
+export async function getFinancingForCar({ userId }) {
+    const car = await getBudgetCar({ userId })
+    const financing = await getFinancingList()
+    return financing.filter(fin => {
+        const selector = fin.selector.split('&').map(sel => sel.split('='))
+        for (const pair of selector) {
+            const [field, value] = pair
+            switch (field) {
+                case 'brand':
+                    if (value.includes(car?.brand)) {
+                        return true
+                    }
+                    break;
+                case 'max_price':
+                    if (car?.retail_price / 100 <= value) {
+                        return true
+                    }
+                    break;
+                default:
+                    return false
+            }
+        }
+        return false
+    })
+}
+
 export async function setBudgetCar({ carId, userId }: { carId: string, userId: string }) {
     const existingDraft = await prisma.draftBudget.findFirst({
         where: { userId }
