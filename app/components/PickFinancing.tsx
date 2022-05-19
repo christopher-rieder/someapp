@@ -1,26 +1,27 @@
-import { Financing } from "@prisma/client";
-import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
-import { LoaderData } from "~/routes/budget/new";
+import { Form, useSearchParams } from "@remix-run/react";
+import { financingList } from "~/models/financing.server";
 import GenericMoney from "./GenericMoney";
 
-export default function PickFinancing({ carId }: { carId: string | undefined }) {
-  const data = useLoaderData() as LoaderData
+type props = {
+  carId?: string
+  financingList?: financingList
+}
+export default function PickFinancing({ carId, financingList }: props) {
   const [searchParams] = useSearchParams();
   const pickingCar = searchParams.get('pick') === 'car'
 
-  if (carId && data.financingList) {
+  if (carId && financingList && !pickingCar) {
     return (
       <div>
         <hr className="m-4" />
         {
-          data.financingList.map((financing: Financing) => (
+          financingList.map((financing) => (
             <Form method="post" key={financing.id} className="flex">
               <div >
                 <div>{`${financing.name} ${financing.max_amount_percentage / 100}%`}| <GenericMoney num={financing.max_amount_flat} /></div>
               </div>
               <button
                 name="pick-financing"
-                disabled={pickingCar}
                 value={financing.id}
                 type="submit"
                 className="pl-2 text-l text-blue-500"
@@ -34,7 +35,7 @@ export default function PickFinancing({ carId }: { carId: string | undefined }) 
     )
   } else {
     return (
-      <Form method="get">
+      <Form>
         <button
           disabled={!carId || pickingCar}
           name="pick"

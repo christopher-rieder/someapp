@@ -1,7 +1,5 @@
 import { Car, DraftBudget, Financing } from "@prisma/client";
 import { prisma } from "~/db.server"
-import { getCar } from "./car.server";
-import { getFinancing } from "./financing.server";
 
 export type DraftBudgetErrors = {
     carPriceMismatch?: boolean
@@ -20,7 +18,7 @@ type Calculations = {
 
 type DraftBudgetResponse = {
     errors?: DraftBudgetErrors
-    draft: DraftBudget & { car: Car | null; financing: Financing | null; }
+    draft: DraftBudget & { car: Car | undefined; financing: Financing | undefined; }
     calculations: Calculations
 }
 

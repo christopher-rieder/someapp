@@ -1,16 +1,18 @@
-import { Car } from "@prisma/client";
-import { Form, useLoaderData } from "@remix-run/react";
-import { LoaderData } from "~/routes/budget/new";
+import { Form } from "@remix-run/react";
+import { carList } from "~/models/car.server";
 import GenericMoney from "./GenericMoney";
 
-export default function PickCar() {
-  const data = useLoaderData() as LoaderData
-  if (data.carList) {
+type props = {
+  carList: carList
+}
+
+export default function PickCar({ carList }: props) {
+  if (carList) {
     return (
       <div>
         <hr className="m-4" />
         {
-          data.carList.map((car: Car) => (
+          carList.map((car) => (
             <Form method="post" key={car.id} className="flex">
               <div>
                 <div>{`${car.brand} ${car.model} ${car.version} - `}<GenericMoney num={car.retail_price} /></div>
@@ -28,19 +30,19 @@ export default function PickCar() {
         }
       </div>
     )
-
-  } else {
-    return (
-      <Form method="get">
-        <button
-          name="pick"
-          value="car"
-          type="submit"
-          className="block p-4 text-xl text-blue-500"
-        >
-          Pick Car
-        </button>
-      </Form>
-    )
   }
+
+  return (
+    <Form>
+      <button
+        name="pick"
+        value="car"
+        type="submit"
+        className="block p-4 text-xl text-blue-500"
+      >
+        Pick Car
+      </button>
+    </Form>
+  )
+
 }

@@ -9,6 +9,8 @@ export async function getFinancing({ id, }: Pick<Financing, "id">) {
     return financing
 }
 
+export type financingList = Awaited<ReturnType<typeof getFinancingList>>
+
 export async function getFinancingList() {
     const financingList = await prisma.financing.findMany();
     return financingList

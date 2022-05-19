@@ -9,6 +9,8 @@ export async function getCar({ id, }: Pick<Car, "id">) {
   return car
 }
 
+export type carList = Awaited<ReturnType<typeof getCarList>> | undefined
+
 export async function getCarList() {
   const carList = await prisma.car.findMany();
   return carList
